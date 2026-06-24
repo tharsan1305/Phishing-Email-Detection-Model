@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishShield AI // Enterprise Email Security & Threat Detector</title>
+    <!-- Google Fonts: Inter for UI and Fira Code for logs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    
+    <div class="app-wrapper">
+        <!-- Top SaaS Navigation Header -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="logo-shield">
+                    <i data-lucide="shield-check"></i>
+                </div>
+                <span class="brand-name">PhishShield<span class="brand-ai">AI</span></span>
+            </div>
+            <div class="header-actions">
+                <div class="license-badge">
+                    <i data-lucide="lock" style="width: 12px; height: 12px;"></i>
+                    <span>ENTERPRISE ACTIVE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Subheader and Tab Controls -->
+        <div class="subheader">
+            <div class="subheader-text">
+                <h2>Email Threat Intelligence Portal</h2>
+                <p>AI-driven natural language processing and hyperlink heuristic auditing.</p>
+            </div>
+
+        </div>
+
+        <!-- Main Workspace -->
+        <main class="main-workspace">
+            
+            <!-- TAB 1: CORE THREAT ANALYZER -->
+            <section id="tab-analyzer" class="tab-content active">
+                <div class="dashboard-grid">
+                    
+                    <!-- Left Column: Input Card -->
+                    <div class="card input-card">
+                        <div class="card-title-bar">
+                            <div class="card-icon-container">
+                                <i data-lucide="file-text"></i>
+                            </div>
+                            <h3>Scan Payload</h3>
+                        </div>
+                        
+                        <form id="analyzer-form" action="/predict" method="POST">
+                            <div class="form-group">
+                                <label for="url-input">Target URL to Inspect</label>
+                                <input 
+                                    type="text" 
+                                    id="url-input" 
+                                    name="url" 
+                                    value="{{ url_text if url_text else '' }}"
+                                    placeholder="e.g. http://paypal-security-verification.com/login"
+                                    required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email-input">Email Body Content</label>
+                                <textarea 
+                                    id="email-input" 
+                                    name="email" 
+                                    placeholder="Paste the full email text, headers, or body content here to scan for social engineering anomalies..." 
+                                    required>{{ email_text if email_text else '' }}</textarea>
+                            </div>
+
+                            <button type="submit" class="btn-check" id="analyze-btn">
+                                <i data-lucide="shield-check"></i> Analyze Security
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Right Column: Analysis Results Card -->
+                    <div class="card results-card" id="results-panel">
+                        
+                        <!-- Standard POST Fallback Result State -->
+                        {% if email_result %}
+                        <div class="fallback-results-container">
+                            <div class="card-title-bar">
+                                <i data-lucide="file-search-2" style="color: #3b82f6;"></i>
+                                <h3>Audit Results (Classic Form Mode)</h3>
+                            </div>
+                            <div class="classic-results-box">
+                                <div class="classic-row">
+                                    <span class="classic-label">NLP Mail Classification:</span>
+                                    <span class="classic-val {% if 'Phishing' in email_result %}badge-red{% else %}badge-green{% endif %}">
+                                        {{ email_result }}
+                                    </span>
+                                </div>
+                                <div class="classic-row">
+                                    <span class="classic-label">Link Heuristics Audit:</span>
+                                    <span class="classic-val {% if '❌' in url_result %}badge-red{% else %}badge-green{% endif %}">
+                                        {{ url_result }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Dynamic AJAX Result UI -->
+                        <div class="dynamic-results-view {% if email_result %}hidden{% endif %}" id="dynamic-results">
+                            
+                            <!-- Idle State -->
+                            <div id="idle-state" class="state-view">
+                                <div class="idle-icon-container">
+                                    <i data-lucide="shield-alert"></i>
+                                </div>
+                                <h3>AWAITING THREAT SCANS</h3>
+                                <p>Provide the target website URL and the email body contents in the input portal, then hit <strong>Analyze Security</strong> to run the threat audit.</p>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div id="loading-state" class="state-view hidden">
+                                <div class="scanner-ring">
+                                    <div class="ring-pulse"></div>
+                                    <i data-lucide="cpu" class="cpu-pulse"></i>
+                                </div>
+                                <h3>DESTRUCTURING CONTENT MATRIX...</h3>
+                                <div class="linear-progress">
+                                    <div class="progress-fill" id="progress-fill"></div>
+                                </div>
+                                <span id="loading-status-text" class="status-subtext">Executing TF-IDF vector mapping...</span>
+                            </div>
+
+                            <!-- Result State -->
+                            <div id="result-state" class="state-view hidden">
+                                <div class="result-details">
+                                    
+                                    <!-- Dynamic Verdict Banner -->
+                                    <div class="verdict-banner safe" id="verdict-banner">
+                                        <div class="verdict-icon-bg" id="verdict-icon-container">
+                                            <i data-lucide="check-circle-2"></i>
+                                        </div>
+                                        <span class="verdict-text" id="verdict-text">Safe Email</span>
+                                    </div>
+
+                                    <!-- AI Confidence Score Bar -->
+                                    <div class="metric-section">
+                                        <div class="metric-header">
+                                            <span class="metric-title">AI Threat Probability</span>
+                                            <span class="metric-val" id="confidence-percent">0%</span>
+                                        </div>
+                                        <div class="progress-track">
+                                            <div class="progress-bar" id="confidence-bar"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Core Security Audits Grid -->
+                                    <div class="stats-grid">
+                                        <!-- Keyword score -->
+                                        <div class="stat-box">
+                                            <span class="stat-label">Linguistic Threat Score</span>
+                                            <div class="stat-value-row">
+                                                <i data-lucide="file-text" class="stat-icon blue" id="keyword-status-icon"></i>
+                                                <span id="keyword-score-text" class="stat-value blue">0%</span>
+                                            </div>
+                                        </div>
+                                        <!-- URL status -->
+                                        <div class="stat-box">
+                                            <span class="stat-label">Hyperlink Safety Status</span>
+                                            <div class="stat-value-row">
+                                                <i data-lucide="link" class="stat-icon" id="url-status-icon"></i>
+                                                <span id="url-status-text" class="stat-value text-muted">Safe</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+        
+        <!-- SaaS Footer -->
+        <footer class="app-footer">
+            <div class="footer-links">
+                <a href="https://stharsan.onrender.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                    <i data-lucide="globe"></i> Portfolio
+                </a>
+                <a href="https://www.linkedin.com/in/tharsan1305" target="_blank" rel="noopener noreferrer" class="footer-link">
+                    <i data-lucide="linkedin"></i> LinkedIn
+                </a>
+            </div>
+            <p class="footer-text">PhishShield AI // Enterprise Phishing Audit Platform // Developed by Tharsan S // v1.0.0</p>
+        </footer>
+    </div>
+
+    <!-- Initialize Lucide Icons and Load script.js -->
+    <script>
+        lucide.createIcons();
+    </script>
+    <script src="/static/script.js"></script>
+</body>
+</html>
